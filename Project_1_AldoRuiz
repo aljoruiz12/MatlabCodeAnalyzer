@@ -1,0 +1,76 @@
+clc
+clear
+close all;
+
+% Load survey data from SurveyResult.xlsx
+filename = 'SurveyResult.xlsx';
+[~, ~, raw] = xlsread(filename);
+headers = {'ID', 'Department', 'EmployeeType', 'Gender', 'Age', ...
+'Value', 'Satisfaction', 'Balance', 'Communication', ...
+'Responsibilities', 'Compensation', 'Recommendation'};
+surveyTable = cell2table(raw(2:end,:), 'VariableNames', headers);
+
+% Process and analyze the data
+departments = unique(surveyTable.Department);
+employeeTypes = ["Full-Time", "Part-Time", "Contracted Third-Party"];
+genderTypes = ["Male", "Female", "Other"];
+resultTypes = ["Value", "Satisfaction", "Balance", "Communication", ...
+"Responsibilities", "Compensation", "Recommendation"];
+
+meanScores = zeros(length(resultTypes), length(departments), ...
+length(employeeTypes), length(genderTypes));
+
+% Compute mean score for each result type, department, employee type, and gender type
+for i = 1:length(resultTypes)
+for j = 1:length(departments)
+for k = 1:length(employeeTypes)
+for m = 1:length(genderTypes)
+index = strcmp(surveyTable.Department, departments{j}) ...
+& strcmp(surveyTable.EmployeeType, employeeTypes(k)) ...
+& strcmp(surveyTable.Gender, genderTypes(m));
+meanScores(i, j, k, m) = mean(surveyTable.(resultTypes(i))(index));
+end
+end
+end
+end
+
+% Visualize the survey results using Matlab plots
+% Bar plots for department-wise analysis
+for i = 1:length(resultTypes)
+figure;
+bar(meanScores(i,:,:,:));
+set(gca, 'XTick', 1:length(departments), 'XTickLabel', departments);
+legend(employeeTypes);
+title(sprintf('Department-wise %s Analysis', resultTypes{i}));
+xlabel('Departments');
+ylabel('Mean Score');
+end
+
+% Stacked bar plots for employee type and gender type analysis
+for i = 1:length(resultTypes)
+for j = 1:length(departments)
+figure;
+bar(squeeze(meanScores(i,j,:,:)), 'stacked');
+set(gca, 'XTick', 1:length(employeeTypes), 'XTickLabel', employeeTypes);
+legend(genderTypes);
+title(sprintf('%s %s Analysis', departments{j}, resultTypes{i}));
+xlabel('Employee Types');
+ylabel('Mean Score');
+end
+end
+
+% Write summary data to SurveySummary.xlsx
+summaryTable = table();
+for i = 1:length(resultTypes)
+for j = 1:length(departments)
+for k = 1:length(employeeTypes)
+for m = 1:length(genderTypes)
+summaryTable = [summaryTable; {departments{j}}, {employeeTypes(k)}, ...
+{genderTypes(m)}, {resultTypes{i}}, meanScores(i,j,k,m)];
+end
+end
+end
+end
+summaryTable.Properties.VariableNames = {'Department', 'EmployeeType', 'Gender', ...
+'ResultType', 'MeanScore'};
+writetable(summaryTable, 'SurveySummary.xlsx');
